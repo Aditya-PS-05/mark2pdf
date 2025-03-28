@@ -1,23 +1,14 @@
-use mark2pdf::{Config, Mark2Pdf};
+use mark2pdf::convert_markdown_to_pdf;
+use std::path::Path;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a new configuration
-    let config = Config::new()
-        .with_input_file("examples/input.md")
-        .with_output_file("examples/output.pdf");
+fn main() {
+    let input_path = Path::new("examples/input.md");
+    let output_path = Path::new("output.pdf");
 
-    // Create a new converter
-    let converter = Mark2Pdf::new(config);
+    if let Err(e) = convert_markdown_to_pdf(input_path, output_path) {
+        eprintln!("Error: {}", e);
+        std::process::exit(1);
+    }
 
-    // Create example markdown file
-    std::fs::write(
-        "examples/input.md",
-        "# Example Document\n\nThis is an example markdown document.\n\n## Features\n\n- Markdown to PDF conversion\n- Custom configuration\n- Easy to use API"
-    )?;
-
-    // Convert markdown to PDF
-    converter.convert("examples/input.md", "examples/output.pdf")?;
-
-    println!("Successfully converted markdown to PDF!");
-    Ok(())
+    println!("Successfully converted {} to {}", input_path.display(), output_path.display());
 } 

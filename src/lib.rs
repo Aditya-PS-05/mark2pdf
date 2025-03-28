@@ -1,74 +1,53 @@
-mod config;
-mod core;
-mod error;
-
-pub use crate::config::{Config, PdfConfig};
-use crate::core::pdf::PdfGenerator;
-use crate::error::Result;
 use std::path::Path;
+use crate::core::markdown::MarkdownProcessor;
+use crate::core::pdf::html_to_pdf;
+use error::Result;
+
+pub mod config;
+pub mod core;
+pub mod error;
 
 pub struct Mark2Pdf {
-    config: Config,
-    pdf_generator: PdfGenerator,
+    markdown_processor: MarkdownProcessor,
 }
 
 impl Mark2Pdf {
-    pub fn new(config: Config) -> Self {
-        let pdf_generator = PdfGenerator::new(config.pdf_config.clone());
+    pub fn new() -> Self {
         Self {
-            config,
-            pdf_generator,
+            markdown_processor: MarkdownProcessor::new(),
         }
     }
 
     pub fn convert<P: AsRef<Path>>(&self, input_path: P, output_path: P) -> Result<()> {
-        // Read the markdown content
-        let content = std::fs::read_to_string(input_path)?;
-        
-        // Convert markdown to HTML
-        let html = self.markdown_to_html(&content)?;
-        
-        // Generate PDF from HTML
-        self.pdf_generator.generate(&html, output_path.as_ref())
+        let content = std::fs::read_to_string(input_path).map_err(|e| error::Mark2PdfError::IoError(e))?;
+        let html = self.markdown_processor.process_content(&content)?;
+        html_to_pdf(&html, output_path.as_ref())?;
+        Ok(())
     }
+}
 
-    fn markdown_to_html(&self, markdown: &str) -> Result<String> {
-        use pulldown_cmark::{Parser, html};
-        
-        let parser = Parser::new(markdown);
-        let mut html_output = String::new();
-        html::push_html(&mut html_output, parser);
-        
-        Ok(html_output)
-    }
+pub fn convert_markdown_to_pdf<P: AsRef<Path>>(input_path: P, output_path: P) -> Result<()> {
+    let mark2pdf = Mark2Pdf::new();
+    mark2pdf.convert(input_path, output_path)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
-    fn test_conversion() -> Result<()> {
-        let config = Config::new();
-        let converter = Mark2Pdf::new(config);
-        
-        let temp_dir = tempdir()?;
-        let input_path = temp_dir.path().join("test.md");
-        let output_path = temp_dir.path().join("test.pdf");
-        
-        // Write test markdown
-        std::fs::write(&input_path, "# Test\n\nThis is a test.")?;
-        
-        // Convert
-        converter.convert(&input_path, &output_path)?;
-        
-        // Verify output exists
-        assert!(output_path.exists());
-        
-        // Clean up
-        temp_dir.close()?;
-        
+    fn test_markdown_to_pdf_conversion() -> Result<()> {
+        let markdown_content = "# Test Document\n\nThis is a test.";
+        let mut input_file = NamedTempFile::new().unwrap();
+        input_file.write_all(markdown_content.as_bytes()).unwrap();
+        let output_file = NamedTempFile::new().unwrap();
+
+        convert_markdown_to_pdf(input_file.path(), output_file.path())?;
+
+        assert!(output_file.path().exists());
         Ok(())
     }
 }

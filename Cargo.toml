@@ -9,13 +9,13 @@ repository = "https://github.com/yourusername/mark2pdf"
 
 [dependencies]
 # Markdown parsing
-pulldown-cmark = "0.9"
+pulldown-cmark = { version = "0.10", features = ["html"] }
 html5ever = "0.26"
 markup5ever_rcdom = "0.2"
 
 # PDF generation
-printpdf = "0.7"
-tempfile = "3.8"
+printpdf = { version = "0.7", features = ["embedded_images"] }
+image = { version = "0.24", features = ["png", "jpeg"] }
 
 # Async runtime
 tokio = { version = "1.36", features = ["full"] }
@@ -38,6 +38,7 @@ napi-derive = "2.15"
 
 [dev-dependencies]
 tokio-test = "0.4"
+tempfile = "3.8"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -1,9 +1,10 @@
+use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Mark2PdfError {
     #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
+    IoError(#[from] io::Error),
 
     #[error("PDF generation error: {0}")]
     PdfError(String),
@@ -13,6 +14,9 @@ pub enum Mark2PdfError {
 
     #[error("Markdown processing error: {0}")]
     MarkdownError(String),
+
+    #[error("Image error: {0}")]
+    ImageError(String),
 }
 
 impl From<printpdf::Error> for Mark2PdfError {
